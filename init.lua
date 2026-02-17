@@ -162,7 +162,7 @@ require('lazy').setup({
     event = 'VimEnter',
     version = '1.*',
     dependencies = { 'L3MON4D3/LuaSnip' },
-    opts = { keymap = { preset = 'default' }, appearance = { nerd_font_variant = 'mono' } },
+    opts = { keymap = { preset = 'super-tab' }, appearance = { nerd_font_variant = 'mono' } },
   },
 
   -- Colorscheme
