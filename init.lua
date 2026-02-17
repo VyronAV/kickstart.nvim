@@ -37,6 +37,27 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>')
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>')
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>')
 
+-- Per-language indentation (add after your other opts, before Lazy)
+local function set_indent(ft, opts)
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = ft,
+    callback = function()
+      vim.bo.shiftwidth = opts.shiftwidth or 2
+      vim.bo.tabstop = opts.tabstop or opts.shiftwidth or 2
+      vim.bo.softtabstop = opts.softtabstop or opts.shiftwidth or 2
+      vim.bo.expandtab = opts.expandtab ~= false
+    end,
+  })
+end
+
+set_indent('lua', { shiftwidth = 2 })
+set_indent('go', { shiftwidth = 4, tabstop = 4 })
+set_indent('javascript', { shiftwidth = 2 })
+set_indent('typescript', { shiftwidth = 2 })
+set_indent('vue', { shiftwidth = 2 })
+set_indent('c', { shiftwidth = 4, tabstop = 4 })
+set_indent('cpp', { shiftwidth = 4, tabstop = 4 })
+
 -- Highlight yank
 vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('highlight_yank', { clear = true }),
