@@ -122,6 +122,7 @@ require('lazy').setup({
         ensure_installed = {
           'gopls',
           'typescript-language-server',
+          'vue-language-server',
           'lua-language-server',
           'stylua',
         },
@@ -149,11 +150,17 @@ require('lazy').setup({
     keys = { { '<leader>f', function() require('conform').format { async = true, lsp_format = 'fallback' } end } },
     opts = {
       notify_on_error = false,
+      format_on_save = true,
       format_on_save = function(bufnr)
         if vim.bo[bufnr].filetype == 'c' or vim.bo[bufnr].filetype == 'cpp' then return nil end
         return { timeout_ms = 500, lsp_format = 'fallback' }
       end,
-      formatters_by_ft = { lua = { 'stylua' } },
+      formatters_by_ft = {
+        lua = { 'stylua' },
+        javascript = { 'prettierd' },
+        typescript = { 'prettierd' },
+        vue = { 'prettierd' },
+      },
     },
   },
 
@@ -238,6 +245,23 @@ require('lazy').setup({
 }, {
   ui = { icons = { cmd = '⌘', config = '🛠', ft = '📂', plugin = '🔌', start = '🚀' } },
 })
+
+require('lspconfig').volar.setup {
+  filetypes = { 'vue', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
+  on_attach = function(client, bufnr)
+    -- Enable omnifunc completion
+    vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
+
+    -- Diagnostics keymaps
+    local opts = { noremap = true, silent = true, buffer = bufnr }
+    vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
+    vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+    vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+    vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+  end,
+}
 
 vim.api.nvim_create_autocmd('ColorScheme', {
   callback = function()
