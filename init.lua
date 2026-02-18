@@ -229,6 +229,12 @@ require('lazy').setup({
       }
     end,
   },
+  -- Auto pair brackets etc.
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = function() require('nvim-autopairs').setup {} end,
+  },
 }, {
   ui = { icons = { cmd = '⌘', config = '🛠', ft = '📂', plugin = '🔌', start = '🚀' } },
 })
