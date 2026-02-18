@@ -36,6 +36,7 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>')
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>')
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>')
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>')
+vim.keymap.set('n', '<leader>gb', function() require('gitsigns').toggle_current_line_blame() end, { desc = 'Toggle Git Blame' })
 
 -- Per-language indentation (add after your other opts, before Lazy)
 local function set_indent(ft, opts)
@@ -206,6 +207,25 @@ require('lazy').setup({
         },
         highlight = { enable = true },
         indent = { enable = true },
+      }
+    end,
+  },
+  -- Git Blame
+  {
+    'lewis6991/gitsigns.nvim',
+    event = 'BufReadPre',
+    config = function()
+      require('gitsigns').setup {
+        current_line_blame = true, -- enable inline blame by default
+
+        current_line_blame_opts = {
+          virt_text = true,
+          virt_text_pos = 'eol', -- end of line
+          delay = 300,
+          ignore_whitespace = false,
+        },
+
+        current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d> - <summary>',
       }
     end,
   },
