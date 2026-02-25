@@ -58,6 +58,8 @@ set_indent('typescript', { shiftwidth = 2 })
 set_indent('vue', { shiftwidth = 2 })
 set_indent('c', { shiftwidth = 4, tabstop = 4 })
 set_indent('cpp', { shiftwidth = 4, tabstop = 4 })
+set_indent('dart', { shiftwidth = 2 })
+set_indent('rust', { shiftwidth = 4, tabstop = 4 })
 
 -- Highlight yank
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -125,6 +127,8 @@ require('lazy').setup({
           'vue-language-server',
           'lua-language-server',
           'stylua',
+          'dart-debug-adapter',
+          'rust-analyzer',
         },
       }
 
@@ -227,6 +231,8 @@ require('lazy').setup({
         javascript = { 'prettierd' },
         typescript = { 'prettierd' },
         vue = { 'prettierd' },
+        dart = { 'dart_format' },
+        rust = { 'rustfmt' },
       },
     },
   },
@@ -268,20 +274,12 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     config = function()
-      require('nvim-treesitter.config').setup {
-        ensure_installed = {
-          'lua',
-          'go',
-          'javascript',
-          'typescript',
-          'vue',
-          'vim',
-          'vimdoc',
-          'query',
-        },
-        highlight = { enable = true },
-        indent = { enable = true },
-      }
+      require('nvim-treesitter').setup {}
+      vim.api.nvim_create_autocmd('FileType', {
+        callback = function()
+          if pcall(vim.treesitter.start) then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
+        end,
+      })
     end,
   },
   -- Git Blame
@@ -309,30 +307,102 @@ require('lazy').setup({
     event = 'InsertEnter',
     config = function() require('nvim-autopairs').setup {} end,
   },
-  -- Commenting
+  -- Flutter + Dart setup
   {
-    'numToStr/Comment.nvim',
+    'akinsho/flutter-tools.nvim',
+    lazy = false,
     dependencies = {
-      'JoosepAlviste/nvim-ts-context-commentstring',
+      'nvim-lua/plenary.nvim',
+      'stevearc/dressing.nvim', -- optional for vim.ui.select
     },
     config = function()
-      require('Comment').setup {
-        pre_hook = function(ctx)
-          local U = require 'Comment.utils'
+      require('flutter-tools').setup {
+        ui = {
+          border = 'rounded',
+          notification_style = 'plugin',
+        },
+        decorations = {
+          statusline = {
+            app_version = false,
+            device = true,
+          },
+        },
+        debugger = {
+          enabled = true,
+          run_via_dap = true,
+        },
+        widget_guides = {
+          enabled = true,
+        },
+        closing_tags = {
+          highlight = 'ErrorMsg',
+          prefix = '//',
+          enabled = true,
+        },
+        lsp = {
+          color = {
+            enabled = true,
+            background = true,
+            background_color = nil,
+            foreground = false,
+            virtual_text = true,
+            virtual_text_str = '■',
+          },
+          on_attach = function(client, bufnr)
+            -- Your existing LSP keymaps here
+            local opts = { noremap = true, silent = true, buffer = bufnr }
+            vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
+            vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+            vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+            vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, opts)
+            vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+          end,
+          capabilities = require('blink.cmp').get_lsp_capabilities(),
+          settings = {
+            showTodos = true,
+            completeFunctionCalls = true,
+            analysisExcludedFolders = {},
+            renameFilesWithClasses = 'prompt',
+            enableSnippets = true,
+          },
+        },
+      }
+    end,
+  },
+  -- Rust setup
+  {
+    'simrat39/rust-tools.nvim',
+    ft = { 'rust' },
+    dependencies = {
+      'neovim/nvim-lspconfig',
+    },
+    config = function()
+      local rt = require 'rust-tools'
+      rt.setup {
+        server = {
+          on_attach = function(client, bufnr)
+            -- Your existing LSP keymaps
+            local opts = { noremap = true, silent = true, buffer = bufnr }
+            vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
+            vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+            vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+            vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, opts)
+            vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+            vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
 
-          -- Determine the location for ts_context_commentstring
-          local location = nil
-          if ctx.ctype == U.ctype.block then
-            location = require('ts_context_commentstring.utils').get_cursor_location()
-          elseif ctx.cmotion == U.cmotion.v or ctx.cmotion == U.cmotion.V then
-            location = require('ts_context_commentstring.utils').get_visual_start_location()
-          end
-
-          return require('ts_context_commentstring.internal').calculate_commentstring {
-            key = ctx.ctype == U.ctype.line and '__default' or '__multiline',
-            location = location,
-          }
-        end,
+            -- Rust-specific keymaps
+            vim.keymap.set('n', '<leader>ca', rt.code_action_group.code_action_group, {
+              buffer = bufnr,
+            })
+            vim.keymap.set('n', '<leader>rr', rt.runnables.runnables, { buffer = bufnr })
+          end,
+        },
+        tools = {
+          hover_actions = {
+            auto_focus = true,
+          },
+        },
       }
     end,
   },
@@ -349,4 +419,9 @@ vim.api.nvim_create_autocmd('ColorScheme', {
     vim.cmd [[highlight TelescopePromptNormal guibg=NONE ctermbg=NONE]]
     vim.cmd [[highlight TelescopePreviewNormal guibg=NONE ctermbg=NONE]]
   end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'vue',
+  callback = function() vim.bo.commentstring = '<!-- %s -->' end,
 })
