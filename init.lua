@@ -58,7 +58,7 @@ set_indent('typescript', { shiftwidth = 2 })
 set_indent('vue', { shiftwidth = 2 })
 set_indent('c', { shiftwidth = 4, tabstop = 4 })
 set_indent('cpp', { shiftwidth = 4, tabstop = 4 })
-set_indent('dart', { shiftwidth = 2 })
+set_indent('dart', { shiftwidth = 2, tabstop = 2 })
 set_indent('rust', { shiftwidth = 4, tabstop = 4 })
 
 -- Highlight yank
@@ -67,6 +67,31 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   callback = function() vim.highlight.on_yank() end,
 })
 
+-- Colorschemes etc.
+vim.api.nvim_create_autocmd('ColorScheme', {
+  callback = function()
+    -- Floating windows
+    vim.cmd [[highlight NormalFloat guibg=NONE ctermbg=NONE]]
+    vim.cmd [[highlight FloatBorder guibg=NONE ctermbg=NONE]]
+    vim.cmd [[highlight TelescopeNormal guibg=NONE ctermbg=NONE]]
+    vim.cmd [[highlight TelescopePromptNormal guibg=NONE ctermbg=NONE]]
+    vim.cmd [[highlight TelescopePreviewNormal guibg=NONE ctermbg=NONE]]
+  end,
+})
+
+-- FileType specific commands
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'vue',
+  callback = function() vim.bo.commentstring = '<!-- %s -->' end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'dart',
+  callback = function()
+    vim.bo.smartindent = true
+    vim.bo.autoindent = true
+  end,
+})
 -- Lazy.nvim bootstrap
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.loop or vim.uv).fs_stat(lazypath) then
@@ -317,6 +342,7 @@ require('lazy').setup({
     },
     config = function()
       require('flutter-tools').setup {
+        flutter_path = '/Users/vyron/source/flutter/bin/flutter',
         ui = {
           border = 'rounded',
           notification_style = 'plugin',
@@ -372,17 +398,14 @@ require('lazy').setup({
   },
   -- Rust setup
   {
-    'simrat39/rust-tools.nvim',
+    'mrcjkb/rustaceanvim',
+    version = '^8',
     ft = { 'rust' },
-    dependencies = {
-      'neovim/nvim-lspconfig',
-    },
     config = function()
-      local rt = require 'rust-tools'
-      rt.setup {
+      -- Optional: same on_attach / capabilities style as your other servers
+      vim.g.rustaceanvim = {
         server = {
           on_attach = function(client, bufnr)
-            -- Your existing LSP keymaps
             local opts = { noremap = true, silent = true, buffer = bufnr }
             vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
             vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
@@ -390,38 +413,18 @@ require('lazy').setup({
             vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, opts)
             vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
             vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-
-            -- Rust-specific keymaps
-            vim.keymap.set('n', '<leader>ca', rt.code_action_group.code_action_group, {
-              buffer = bufnr,
-            })
-            vim.keymap.set('n', '<leader>rr', rt.runnables.runnables, { buffer = bufnr })
+            -- Rust-specific: code action group (replaces rt.code_action_group)
+            vim.keymap.set('n', '<leader>ca', function() vim.cmd.RustLsp 'codeAction' end, { buffer = bufnr })
+            -- Runnables (replaces rt.runnables.runnables)
+            vim.keymap.set('n', '<leader>rr', function() vim.cmd.RustLsp 'runnables' end, { buffer = bufnr })
           end,
         },
         tools = {
-          hover_actions = {
-            auto_focus = true,
-          },
+          hover_actions = { auto_focus = true },
         },
       }
     end,
   },
 }, {
   ui = { icons = { cmd = '⌘', config = '🛠', ft = '📂', plugin = '🔌', start = '🚀' } },
-})
-
-vim.api.nvim_create_autocmd('ColorScheme', {
-  callback = function()
-    -- Floating windows
-    vim.cmd [[highlight NormalFloat guibg=NONE ctermbg=NONE]]
-    vim.cmd [[highlight FloatBorder guibg=NONE ctermbg=NONE]]
-    vim.cmd [[highlight TelescopeNormal guibg=NONE ctermbg=NONE]]
-    vim.cmd [[highlight TelescopePromptNormal guibg=NONE ctermbg=NONE]]
-    vim.cmd [[highlight TelescopePreviewNormal guibg=NONE ctermbg=NONE]]
-  end,
-})
-
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'vue',
-  callback = function() vim.bo.commentstring = '<!-- %s -->' end,
 })
