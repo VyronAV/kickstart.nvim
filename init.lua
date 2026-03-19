@@ -60,6 +60,7 @@ set_indent('c', { shiftwidth = 4, tabstop = 4 })
 set_indent('cpp', { shiftwidth = 4, tabstop = 4 })
 set_indent('dart', { shiftwidth = 2, tabstop = 2 })
 set_indent('rust', { shiftwidth = 4, tabstop = 4 })
+set_indent('scheme', { shiftwidth = 2, expandtab = true })
 
 -- Highlight yank
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -92,6 +93,24 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.bo.autoindent = true
   end,
 })
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'scheme',
+  callback = function()
+    vim.bo.commentstring = '; %s'
+    vim.g.lisp_rainbow = 1 -- Enable rainbow parenthesis if using plugin
+  end,
+})
+
+-- Recognise Scheme file extensions
+vim.filetype.add {
+  extensions = {
+    scm = 'scheme',
+    ss = 'scheme',
+    sls = 'scheme',
+    sld = 'scheme',
+  },
+}
 -- Lazy.nvim bootstrap
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not (vim.loop or vim.uv).fs_stat(lazypath) then
@@ -258,6 +277,7 @@ require('lazy').setup({
         vue = { 'prettierd' },
         dart = { 'dart_format' },
         rust = { 'rustfmt' },
+        scheme = { 'scmfmt' },
       },
     },
   },
@@ -299,7 +319,9 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     config = function()
-      require('nvim-treesitter').setup {}
+      require('nvim-treesitter').setup {
+        ensure_installed = { 'scheme' },
+      }
       vim.api.nvim_create_autocmd('FileType', {
         callback = function()
           if pcall(vim.treesitter.start) then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
@@ -424,6 +446,42 @@ require('lazy').setup({
         },
       }
     end,
+  },
+  -- Rainbow parentheses for Lisp
+  {
+    'HiPhish/rainbow-delimiters.nvim',
+    config = function()
+      local rainbow_delimiters = require 'rainbow-delimiters'
+      require('rainbow-delimiters.setup').setup {
+        strategy = {
+          [''] = rainbow_delimiters.strategy['global'],
+          vim = rainbow_delimiters.strategy['local'],
+        },
+        query = {
+          [''] = 'rainbow-delimiters',
+          lua = 'rainbow-blocks',
+        },
+        priority = {
+          [''] = 110,
+          lua = 210,
+        },
+        highlight = {
+          'RainbowDelimiterRed',
+          'RainbowDelimiterYellow',
+          'RainbowDelimiterBlue',
+          'RainbowDelimiterOrange',
+          'RainbowDelimiterGreen',
+          'RainbowDelimiterViolet',
+          'RainbowDelimiterCyan',
+        },
+      }
+    end,
+  },
+  -- Structural editing for Lisp
+  {
+    'julienvincent/nvim-paredit',
+    ft = { 'scheme', 'lisp', 'clojure', 'racket', 'hy' },
+    config = function() require('nvim-paredit').setup() end,
   },
 }, {
   ui = { icons = { cmd = '⌘', config = '🛠', ft = '📂', plugin = '🔌', start = '🚀' } },
