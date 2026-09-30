@@ -65,7 +65,7 @@ set_indent('scheme', { shiftwidth = 2, expandtab = true })
 -- Highlight yank
 vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('highlight_yank', { clear = true }),
-  callback = function() vim.highlight.on_yank() end,
+  callback = function() vim.hl.on_yank() end,
 })
 
 -- Colorschemes etc.
@@ -319,9 +319,9 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     config = function()
-      require('nvim-treesitter').setup {
-        ensure_installed = { 'scheme' },
-      }
+      require('nvim-treesitter').setup {}
+      -- main branch installs on demand; `ensure_installed` is a master-branch option
+      require('nvim-treesitter').install { 'scheme' }
       vim.api.nvim_create_autocmd('FileType', {
         callback = function()
           if pcall(vim.treesitter.start) then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
@@ -388,15 +388,10 @@ require('lazy').setup({
           enabled = true,
         },
         lsp = {
-          color = {
-            enabled = true,
-            background = true,
-            background_color = nil,
-            foreground = false,
-            virtual_text = true,
-            virtual_text_str = '■',
-          },
           on_attach = function(client, bufnr)
+            if client:supports_method('textDocument/documentColor', bufnr) then
+              vim.lsp.document_color.enable(true, { bufnr = bufnr }, { style = 'background' })
+            end
             -- Your existing LSP keymaps here
             local opts = { noremap = true, silent = true, buffer = bufnr }
             vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
